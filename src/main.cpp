@@ -1,3 +1,9 @@
+#include <iostream>
+
+#include "optionparser.h"
+#include "arg.h"
+#include "configuration.h"
+
 #include <llvm/Support/Host.h>
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 
@@ -6,25 +12,56 @@
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Basic/TargetOptions.h>
 #include <clang/Basic/TargetInfo.h>
+#include <clang/Basic/FileManager.h>
+#include <clang/Basic/SourceManager.h>
+#include <clang/Lex/Preprocessor.h>
+#include <clang/Basic/Diagnostic.h>
+#include <clang/AST/ASTContext.h>
+#include <clang/AST/ASTConsumer.h>
+#include <clang/Parse/Parser.h>
+#include <clang/Parse/ParseAST.h>
 
-int main()
+#include "astvisitor.h"
+
+int main(int argc, char *argv[])
 {
-    using clang::CompilerInstance;
-    using clang::TargetOptions;
-    using clang::TargetInfo;
-    using clang::DiagnosticOptions;
-    using clang::TextDiagnosticPrinter;
+	const Configuration conf = Arg::getConfig(argc, argv);
 
-    CompilerInstance ci;
+    clang::CompilerInstance ci;
+    clang::DiagnosticOptions diagnosticOptions;
+    ci.getLangOpts().CPlusPlus = 1;
+	ci.getLangOpts().CPlusPlus11 = 1;
     ci.createDiagnostics();
 
-    std::shared_ptr<TargetOptions>	pto	=	std::make_shared<TargetOptions>();
+    std::shared_ptr<clang::TargetOptions> pto = std::make_shared<clang::TargetOptions>();
     pto->Triple = llvm::sys::getDefaultTargetTriple();
-    TargetInfo *pti = TargetInfo::CreateTargetInfo(ci.getDiagnostics(), pto);
+    clang::TargetInfo *pti = clang::TargetInfo::CreateTargetInfo(ci.getDiagnostics(), pto);
     ci.setTarget(pti);
+
+	if (conf.sysroot.size()) {
+		ci.getHeaderSearchOpts().Sysroot = conf.sysroot;
+    }
 
     ci.createFileManager();
     ci.createSourceManager(ci.getFileManager());
     ci.createPreprocessor(clang::TU_Complete);
+    ci.getPreprocessorOpts().UsePredefines = false;
+	for (int i = 0; i < conf.defines.size(); i++) {
+		ci.getPreprocessorOpts().addMacroDef(conf.defines.at(i));
+	}
+	ci.setASTConsumer(llvm::make_unique<AstConsumer>(conf));
+
+    ci.createASTContext();
+
+	for (size_t i = 0; i < conf.files.size(); i++) {
+		const clang::FileEntry *pFile = ci.getFileManager().getFile(conf.files.at(i).c_str());
+        ci.getSourceManager().setMainFileID( ci.getSourceManager().createFileID( pFile, clang::SourceLocation(), clang::SrcMgr::C_User));
+        ci.getDiagnosticClient().BeginSourceFile(ci.getLangOpts(),
+                                                 &ci.getPreprocessor());
+        clang::ParseAST(ci.getPreprocessor(), &ci.getASTConsumer(), ci.getASTContext());
+        ci.getDiagnosticClient().EndSourceFile();
+    }
+
+
     return 0;
 }
