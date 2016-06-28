@@ -22,10 +22,14 @@
 #include <clang/Parse/ParseAST.h>
 
 #include "astvisitor.h"
+#include "preprocessorhandler.h"
 
 int main(int argc, char *argv[])
 {
+	fprintf(stderr, "argv %s\n", *argv);
 	const Configuration conf = Arg::getConfig(argc, argv);
+
+
 
     clang::CompilerInstance ci;
     clang::DiagnosticOptions diagnosticOptions;
@@ -50,6 +54,7 @@ int main(int argc, char *argv[])
 		ci.getPreprocessorOpts().addMacroDef(conf.defines.at(i));
 	}
 	ci.setASTConsumer(llvm::make_unique<AstConsumer>(conf));
+	ci.getPreprocessor().addPPCallbacks(llvm::make_unique<PreProcessorHandler>(conf, ci.getSourceManager()));
 
     ci.createASTContext();
 

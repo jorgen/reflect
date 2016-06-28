@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-struct  Configuration
+struct Configuration
 {
 	std::string root_src_dir;
 	std::string sysroot;

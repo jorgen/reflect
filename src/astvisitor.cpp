@@ -3,49 +3,49 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/Lex/Lexer.h>
 
-ClassVisitor::ClassVisitor(const Configuration &conf, clang::ASTContext *context)
-	: clang::RecursiveASTVisitor<ClassVisitor>()
-	, _conf(conf)
-	, _context(context)
-{
-}
+//ClassVisitor::ClassVisitor(const Configuration &conf, clang::ASTContext *context)
+//	: clang::RecursiveASTVisitor<ClassVisitor>()
+//	, _conf(conf)
+//	, _context(context)
+//{
+//}
 
-bool ClassVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *declaration)
-{
-	clang::FullSourceLoc fullLocation = _context->getFullLoc(declaration->getLocStart());
-	clang::PresumedLoc loc = _context->getSourceManager().getPresumedLoc(fullLocation);
-	if (loc.isInvalid())
-		return true;
-	std::string filename = loc.getFilename();
-	llvm::SmallString<512> fileNameV;
-	fileNameV.append(filename.begin(), filename.end());
-	_context->getSourceManager().getFileManager().makeAbsolutePath(fileNameV);
-	filename = fileNameV.data();
-	if (filename.compare(0, _conf.srcroot.size(), _conf.srcroot))
-		return true;
+//bool ClassVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *declaration)
+//{
+//	clang::FullSourceLoc fullLocation = _context->getFullLoc(declaration->getLocStart());
+//	clang::PresumedLoc loc = _context->getSourceManager().getPresumedLoc(fullLocation);
+//	if (loc.isInvalid())
+//		return true;
+//	std::string filename = loc.getFilename();
+//	llvm::SmallString<512> fileNameV;
+//	fileNameV.append(filename.begin(), filename.end());
+//	_context->getSourceManager().getFileManager().makeAbsolutePath(fileNameV);
+//	filename = fileNameV.data();
+//	if (filename.compare(0, _conf.srcroot.size(), _conf.srcroot))
+//		return true;
 
-	fprintf(stderr, "cxx record %s\n\t%s\n", declaration->getQualifiedNameAsString().c_str(), filename.c_str());
-	for (auto ctr : declaration->ctors()) {
-	}
-	for (auto fields : declaration->fields()) {
-		fprintf(stderr, "field: \n");
-		fields->dump();
-	}
-//	for (auto attr : declaration->attrs()) {
-//		fprintf(stderr, "attr: \n");
-//		attr->();
+//	fprintf(stderr, "cxx record %s\n\t%s\n", declaration->getQualifiedNameAsString().c_str(), filename.c_str());
+//	for (auto ctr : declaration->ctors()) {
 //	}
+//	for (auto fields : declaration->fields()) {
+//		fprintf(stderr, "field: \n");
+//		fields->dump();
+//	}
+////	for (auto attr : declaration->attrs()) {
+////		fprintf(stderr, "attr: \n");
+////		attr->();
+////	}
 
-	for (auto method : declaration->methods()) {
-		clang::CXXMethodDecl *func = method;
-//		if (!func->is)
-//			continue;
+//	for (auto method : declaration->methods()) {
+//		clang::CXXMethodDecl *func = method;
+////		if (!func->is)
+////			continue;
 
-		fprintf(stderr, "method: \n");
-		method->dump();
-	}
-	return true;
-}
+//		fprintf(stderr, "method: \n");
+//		method->dump();
+//	}
+//	return true;
+//}
 
 class ClassPrinter : public clang::ast_matchers::MatchFinder::MatchCallback
 {
@@ -86,6 +86,6 @@ void AstConsumer::HandleTranslationUnit(clang::ASTContext &context)
 	finder.addMatcher(matcher, &printer);
 	finder.matchAST(context);
 	clang::CharSourceRange range = clang::CharSourceRange::getTokenRange(context.getTranslationUnitDecl()->getSourceRange());
-	clang::CharSourceRange lexerRange = clang::Lexer::makeFileCharRange(range,context.getSourceManager(), context.LangOpts);
+//	clang::CharSourceRange lexerRange = clang::Lexer::makeFileCharRange(range,context.getSourceManager(), context.LangOpts);
 
 }
