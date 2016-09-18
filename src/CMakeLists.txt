@@ -1,6 +1,3 @@
-find_package (LLVM REQUIRED)
-find_package (Clang REQUIRED)
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-rtti")
 
 file(GLOB SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
@@ -22,4 +19,3 @@ target_link_libraries(reflect PRIVATE clangARCMigrate)
 target_link_libraries(reflect PRIVATE clangASTMatchers)
 target_link_libraries(reflect PRIVATE clangCodeGen)
 target_link_libraries(reflect PRIVATE clangRewriteFrontend)
-

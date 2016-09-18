@@ -5,6 +5,7 @@
 
 #include <sys/stat.h>
 #include <errno.h>
+#include <unistd.h>
 
 enum optionIndex {
 	UNKNOWN,
@@ -12,7 +13,8 @@ enum optionIndex {
 	SYSROOT,
 	SRCROOT,
 	INCLUDE,
-	DEFINE
+	DEFINE,
+        OUTFILE
 };
 
 const option::Descriptor usage[] =
@@ -23,17 +25,27 @@ const option::Descriptor usage[] =
 	{DEFINE,        0, "D", "",                option::Arg::Optional,        "  -D        \tAdd compiler define"},
 	{SYSROOT,       0, "" , "sysroot",         Arg::requiresExistingDir,     "  --sysroot \tDirectory for sysroot."},
 	{SRCROOT,       0, "" , "srcroot",         Arg::requiresExistingDir,     "  --srcroot \tDirectory for src root of project"},
+	{OUTFILE,       0, "o" , "outfile",        Arg::requiresWritableFile,    "  -o --outfile \tOutput file. Default is stdout"},
 
 	{UNKNOWN,       0, "" ,  ""   ,            option::Arg::None,            "\nExamples:\v"
 	 "reflect -I some/include main.cpp"},
 	{0,0,0,0,0,0}
 };
 
+static bool isFile(const char *file)
+{
+    struct stat stat_buf;
+    stat(file, &stat_buf);
+
+    return S_ISREG(stat_buf.st_mode);
+}
+
 Configuration Arg::getConfig(int argc, char **argv)
 {
 	argc-=(argc>0); argv+=(argc>0);
 
 	Configuration conf;
+        conf.out_file = stdout;
 	option::Stats  stats(true, usage, argc, argv);
 	std::vector<option::Option> options(stats.options_max);
 	std::vector<option::Option> buffer(stats.buffer_max);
@@ -47,11 +59,24 @@ Configuration Arg::getConfig(int argc, char **argv)
 		option::printUsage(std::cout, usage);
 		exit(0);
 	}
-	for (size_t i = 0; i < parser.nonOptionsCount(); i++) {
-		conf.files.push_back(parser.nonOption(i));
-	}
-	if (!Arg::allExistingFiles(conf.files))
-		exit(0);
+        if (parser.nonOptionsCount() < 1) {
+            fprintf(stderr, "Please provide an input file\n");
+            option::printUsage(std::cerr, usage);
+            exit(1);
+        }
+
+        if (parser.nonOptionsCount() > 1) {
+            fprintf(stderr, "Please provide only one input file\n");
+            option::printUsage(std::cerr, usage);
+            exit(1);
+        }
+
+        conf.file = parser.nonOption(0);
+        if (!isFile(conf.file.c_str())) {
+            fprintf(stderr, "Input file %s does not exist\n", conf.file.c_str());
+            option::printUsage(std::cerr, usage);
+            exit(1);
+        }
 
 	for (int i = 0; i < parser.optionsCount(); ++i)
 	{
@@ -72,6 +97,10 @@ Configuration Arg::getConfig(int argc, char **argv)
 			break;
 		case DEFINE:
 			conf.defines.push_back(opt.arg);
+                        break;
+                case OUTFILE:
+                        conf.out_file = fopen(opt.arg, "w+");
+                        break;
 		}
 	}
 
@@ -90,14 +119,6 @@ void Arg::printError(const char* msg1, const option::Option& opt, const char* ms
   fwrite(opt.name, opt.namelen, sizeof(char), stderr);
   fprintf(stderr, "%s", msg2);
 
-}
-
-static bool isFile(const char *file)
-{
-    struct stat stat_buf;
-    stat(file, &stat_buf);
-
-    return S_ISREG(stat_buf.st_mode);
 }
 
 static bool isDir(const char *file)
@@ -119,15 +140,19 @@ option::ArgStatus Arg::requiresExistingDir(const option::Option &option, bool ms
     return option::ARG_ILLEGAL;
 }
 
-bool Arg::allExistingFiles(const std::vector<std::string> &files)
+option::ArgStatus Arg::requiresWritableFile(const option::Option &option, bool msg)
 {
-    for (size_t i = 0; i < files.size(); i++) {
-        if (!isFile(files.at(i).c_str())) {
-            fprintf(stderr, "Not all files specified files exists: %s\n", files.at(i).c_str());
-            return false;
+    FILE *file = fopen(option.arg, "w+");
+
+    if (!file)
+    {
+        if (msg) {
+            fprintf (stderr, "Error opening write file: %s\n",strerror(errno));
+            printError("Option '", option, "' requires a file that can be opened\n");
+            return option::ARG_ILLEGAL;
         }
     }
-    return true;
+    return option::ARG_OK;
 }
 
 option::ArgStatus Arg::unknown(const option::Option &option, bool msg)

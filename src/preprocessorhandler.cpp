@@ -10,25 +10,24 @@ PreProcessorHandler::PreProcessorHandler(const Configuration &conf, clang::Sourc
 
 }
 
-void PreProcessorHandler::InclusionDirective(clang::SourceLocation HashLocation,
-											 const clang::Token & include_token,
-											 llvm::StringRef FileNameRef, bool IsAngled,
-											 clang::CharSourceRange FileNameRange,
-											 const clang::FileEntry * IncludedFile,
-											 llvm::StringRef /*SearchPath*/, llvm::StringRef RelativePath,
-											 const clang::Module * ImportedModule)
-{
-
-	const clang::FileEntry * file = _manager.getFileEntryForID(_manager.getFileID(HashLocation));
-	_manager.get
-	fprintf(stderr, "file is in dir: %s\n", file->getDir()->getName());
-	fprintf(stderr, "include found in file %s\n", _manager.getFilename(HashLocation));
-//	fprintf(stderr, "hashLocation dump begin\n");
-//	HashLocation.dump(_manager);
-
-//	fprintf(stderr, "hashLocation dump end\n");
-//	end.dump(_manager);
-//	begin.print(this->)
-//	fprintf(stderr, "%s %s\n", FileNameRef.str().c_str(), FileNameRange.)
-
-}
+//void PreProcessorHandler::InclusionDirective(clang::SourceLocation HashLocation,
+//                                             const clang::Token & include_token,
+//                                             llvm::StringRef FileNameRef, bool IsAngled,
+//                                             clang::CharSourceRange FileNameRange,
+//                                             const clang::FileEntry * IncludedFile,
+//                                             llvm::StringRef /*SearchPath*/, llvm::StringRef RelativePath,
+//                                             const clang::Module * ImportedModule)
+//{
+//
+//    const clang::FileEntry * file = _manager.getFileEntryForID(_manager.getFileID(HashLocation));
+//    //fprintf(stderr, "file is in dir: %s\n", file->getDir()->getName());
+//    //fprintf(stderr, "include found in file %s\n", _manager.getFilename(HashLocation).data());
+////	fprintf(stderr, "hashLocation dump begin\n");
+////	HashLocation.dump(_manager);
+//
+////	fprintf(stderr, "hashLocation dump end\n");
+////	end.dump(_manager);
+////	begin.print(this->)
+////	fprintf(stderr, "%s %s\n", FileNameRef.str().c_str(), FileNameRange.)
+//
+//}
