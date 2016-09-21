@@ -13,50 +13,40 @@ ClassVisitor::ClassVisitor(const Configuration &conf, clang::ASTContext *context
 bool ClassVisitor::VisitCXXRecordDecl(clang::CXXRecordDecl *declaration)
 {
 	clang::FullSourceLoc fullLocation = _context->getFullLoc(declaration->getLocStart());
-	clang::PresumedLoc loc = _context->getSourceManager().getPresumedLoc(fullLocation);
-	if (loc.isInvalid())
-		return true;
-	std::string filename = loc.getFilename();
-	llvm::SmallString<512> fileNameV;
-	fileNameV.append(filename.begin(), filename.end());
-	_context->getSourceManager().getFileManager().makeAbsolutePath(fileNameV);
-	filename = fileNameV.data();
-    if (filename.compare(0, _conf.srcroot.size(), _conf.srcroot)) {
-        //fprintf(stderr, "filename %s : srcroot %s\n", filename.c_str(), _conf.srcroot.c_str());
-		return true;
-    }
-
-        if (!declaration->isCompleteDefinition())
-                return true;
-
-        const std::string &qualifiedName = declaration->getQualifiedNameAsString();
-        fprintf(_conf.out_file, "template<>\n");
-        fprintf(_conf.out_file, "void JR::parseData<%s>(%s &to_type, JT::Tokenizer &tokenizer, JT::Token &token, bool &parsed)\n", qualifiedName.c_str(), qualifiedName.c_str());
-        fprintf(_conf.out_file, "{\n");
-        fprintf(_conf.out_file, "    parsed = false;\n");
-        fprintf(_conf.out_file, "    if (token.value_type != JT::Token::ObjectStart)\n");
-        fprintf(_conf.out_file, "        return ;\n");
-        fprintf(_conf.out_file, "    JT::Error error = tokenizer.nextToken(token);\n");
-        fprintf(_conf.out_file, "    if (error != JT::Error::NoError)\n");
-        fprintf(_conf.out_file, "       return;\n");
-        fprintf(_conf.out_file, "    while(token.value_type != JT::Token::ObjectEnd)\n");
-        fprintf(_conf.out_file, "    {\n");
-	for (auto field : declaration->fields()) {
-            fprintf(_conf.out_file, "        if (memcmp(\"%s\", token.name.data, std::min(sizeof(\"%s\"), token.name.size)))\n", field->getNameAsString().c_str(), field->getNameAsString().c_str());
-            fprintf(_conf.out_file, "        {\n");
-            fprintf(_conf.out_file, "            to_type.%s = std::string(token.value.data, token.value.size);\n", field->getNameAsString().c_str());
-            fprintf(_conf.out_file, "        } else\n");
-
-	}
+    llvm::StringRef filename = _context->getSourceManager().getFilename(fullLocation);
+    if (filename.size() == 0)
+        return true;
+    if (_conf.file.compare(filename.str()))
+        return true;
+    
+    const std::string &qualifiedName = declaration->getQualifiedNameAsString();
+    fprintf(_conf.out_file, "template<>\n");
+    fprintf(_conf.out_file, "bool JR::parseData<%s>(%s &to_type, JT::Tokenizer &tokenizer, JT::Token &token)\n", qualifiedName.c_str(), qualifiedName.c_str());
+    fprintf(_conf.out_file, "{\n");
+    fprintf(_conf.out_file, "    if (token.value_type != JT::Token::ObjectStart)\n");
+    fprintf(_conf.out_file, "        return false;\n");
+    fprintf(_conf.out_file, "    JT::Error error = tokenizer.nextToken(token);\n");
+    fprintf(_conf.out_file, "    if (error != JT::Error::NoError)\n");
+    fprintf(_conf.out_file, "       return false;\n");
+    fprintf(_conf.out_file, "    while(token.value_type != JT::Token::ObjectEnd)\n");
+    fprintf(_conf.out_file, "    {\n");
+    for (auto field : declaration->fields()) {
+        std::string fieldType = field->getType().getAsString();
+        fprintf(_conf.out_file, "        if (memcmp(\"\\\"%s\\\"\", token.name.data, std::max(sizeof(\"\\\"%s\\\"\") - 1, token.name.size)) == 0)\n", field->getNameAsString().c_str(), field->getNameAsString().c_str());
         fprintf(_conf.out_file, "        {\n");
-        fprintf(_conf.out_file, "            fprintf(stderr, \"Not recognised property %%s with value %%s when parsing JSON for structure %s\\n\", std::string(token.name.data, token.name.size).c_str(), std::string(token.value.data, token.value.size).c_str());\n", qualifiedName.c_str());
-        fprintf(_conf.out_file, "        }\n");
-        fprintf(_conf.out_file, "        error = tokenizer.nextToken(token);\n");
-        fprintf(_conf.out_file, "        if (error != JT::Error::NoError)\n");
-        fprintf(_conf.out_file, "           return;\n");
-        fprintf(_conf.out_file, "    }\n");
-        fprintf(_conf.out_file, "    parsed = true;\n");
-        fprintf(_conf.out_file, "}\n");
+        fprintf(_conf.out_file, "            if (!JR::parseData<%s>(to_type.%s, tokenizer, token))\n", fieldType.c_str(), field->getNameAsString().c_str());
+        fprintf(_conf.out_file, "                return false;\n");
+        fprintf(_conf.out_file, "        } else\n");
+    }
+    fprintf(_conf.out_file, "        {\n");
+    fprintf(_conf.out_file, "            fprintf(stderr, \"Not recognised property %%s with value %%s when parsing JSON for structure %s\\n\", std::string(token.name.data, token.name.size).c_str(), std::string(token.value.data, token.value.size).c_str());\n", qualifiedName.c_str());
+    fprintf(_conf.out_file, "        }\n");
+    fprintf(_conf.out_file, "        error = tokenizer.nextToken(token);\n");
+    fprintf(_conf.out_file, "        if (error != JT::Error::NoError)\n");
+    fprintf(_conf.out_file, "           return false;\n");
+    fprintf(_conf.out_file, "    }\n");
+    fprintf(_conf.out_file, "    return true;\n");
+    fprintf(_conf.out_file, "}\n");
 
         //for(auto method : declaration->methods()) {
 //            clang::QualType qualfield = field->getType().getLocalUnqualifiedType().getTypePtr()->getPointeeType();

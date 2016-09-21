@@ -1,10 +1,6 @@
 #include <JR/parse.h>
 #include <string>
-
-struct Vec3
-{
-    float data[3];
-};
+#include "vec3.h"
 
 struct TestStruct
 {

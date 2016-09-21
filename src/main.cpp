@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
     ci.createSourceManager(ci.getFileManager());
     ci.createPreprocessor(clang::TU_Complete);
     ci.getPreprocessorOpts().UsePredefines = true;
+    ci.getPreprocessor().SetSuppressIncludeNotFoundError(true);
     ci.getPreprocessor().getBuiltinInfo().initializeBuiltins(ci.getPreprocessor().getIdentifierTable(), ci.getPreprocessor().getLangOpts());
     for (int i = 0; i < conf.defines.size(); i++) {
         ci.getPreprocessorOpts().addMacroDef(conf.defines.at(i));
