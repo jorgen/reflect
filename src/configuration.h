@@ -11,6 +11,8 @@ struct Configuration
 	std::string sysroot;
 	std::string srcroot;
 	std::string file;
+        std::string out_file_name;
+        std::string tmp_file_name;
 	std::vector<std::string> include_dirs;
 	std::vector<std::string> defines;
         FILE *out_file;

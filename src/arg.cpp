@@ -100,8 +100,14 @@ Configuration Arg::getConfig(int argc, char **argv)
                         break;
                 case OUTFILE:
                         conf.out_file = fopen(opt.arg, "w+");
+                        conf.out_file_name = opt.arg;
+                        fprintf(conf.out_file, " ");
+                        fclose(conf.out_file);
+                        conf.tmp_file_name = conf.out_file_name + "reflect_parse_XXXX";
+                        mktemp(&conf.tmp_file_name[0]);
+                        conf.out_file = fopen(conf.tmp_file_name.c_str(), "w+");
                         break;
-		}
+                }
 	}
 
 	if (!conf.srcroot.size()) {

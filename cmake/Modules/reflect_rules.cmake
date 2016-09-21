@@ -1,4 +1,4 @@
-function(target_add_reflect_file target file_to_add)
+function(target_add_reflect_file target file_to_add source_root)
     if (TARGET reflect)
         set(REFLECT_EXE $<TARGET_FILE:reflect>)
     else()
@@ -22,8 +22,13 @@ function(target_add_reflect_file target file_to_add)
     foreach (_variableName ${_variableNames})
         message(STATUS "${_variableName}=${${_variableName}}")
     endforeach()
+    foreach(cDir ${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES})
+        set(INCLUDE_DIRS ${INCLUDE_DIRS} -I${cDir} -I${CMAKE_CURRENT_BINARY_DIR})
+    endforeach()
+    set(INCLUDE_DIRS ${INCLUDE_DIRS} -I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/8.0.0/include)
     add_custom_command(OUTPUT ${OUTPUT_FILE}
-                       COMMAND ${REFLECT_EXE} "${file_with_path}" ${INCLUDE_DIRS} -o ${OUTPUT_FILE} --sysroot ${_CMAKE_OSX_SYSROOT_PATH}
-                       DEPENDS "${file_with_path}")
+                       COMMAND ${REFLECT_EXE} "${file_with_path}" ${INCLUDE_DIRS} -o ${OUTPUT_FILE} --sysroot /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --srcroot ${source_root}
+                       DEPENDS "${file_with_path}"
+                               ${REFLECT_EXE})
     target_sources(${target} PRIVATE "${OUTPUT_FILE}")
 endfunction()

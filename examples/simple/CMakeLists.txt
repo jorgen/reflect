@@ -1,5 +1,5 @@
 include(reflect_rules)
-add_executable(simple main.cpp)
+add_executable(simple main.cpp test_struct.h)
 target_include_directories(simple PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 add_dependencies(simple reflect)
-target_add_reflect_file(simple test_struct.h)
+target_add_reflect_file(simple test_struct.h ${CMAKE_CURRENT_SOURCE_DIR})

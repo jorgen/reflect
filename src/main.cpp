@@ -25,18 +25,18 @@
 #include "astvisitor.h"
 #include "preprocessorhandler.h"
 
+#include <stdio.h>
 int main(int argc, char *argv[])
 {
-    fprintf(stderr, "argv %s\n", *argv);
     const Configuration conf = Arg::getConfig(argc, argv);
 
     clang::CompilerInstance ci;
-    clang::DiagnosticOptions diagnosticOptions;
     ci.getLangOpts().Bool = 1;
-    ci.getLangOpts().C11 = 1;
     ci.getLangOpts().CPlusPlus = 1;
     ci.getLangOpts().CPlusPlus11 = 1;
     ci.getLangOpts().WChar = 1;
+    ci.getLangOpts().EncodeExtendedBlockSig = 1;
+    ci.getLangOpts().ImplicitInt = 0;
     ci.createDiagnostics();
 
     std::shared_ptr<clang::TargetOptions> pto = std::make_shared<clang::TargetOptions>();
@@ -51,7 +51,6 @@ int main(int argc, char *argv[])
     ci.getHeaderSearchOpts().UseLibcxx = true;
 
     for(auto include_dir : conf.include_dirs) {
-        fprintf(stderr, "adding include dir %s\n", include_dir.c_str());
         ci.getHeaderSearchOpts().AddPath(llvm::StringRef(include_dir), clang::frontend::Angled,false,true);
     }
 
@@ -76,8 +75,19 @@ int main(int argc, char *argv[])
     ci.getSourceManager().setMainFileID( ci.getSourceManager().createFileID( pFile, clang::SourceLocation(), clang::SrcMgr::C_User));
     ci.getDiagnosticClient().BeginSourceFile(ci.getLangOpts(),
                                              &ci.getPreprocessor());
-    clang::ParseAST(ci.getPreprocessor(), &ci.getASTConsumer(), ci.getASTContext());
+    clang::ParseAST(ci.getPreprocessor(), &ci.getASTConsumer(), ci.getASTContext(), false, clang::TU_Complete, nullptr, true);
+    int num_errors = ci.getDiagnosticClient().getNumErrors();
     ci.getDiagnosticClient().EndSourceFile();
 
-    return 0;
+    if (conf.tmp_file_name.size()) {
+        fclose(conf.out_file);
+        if (num_errors) {
+            remove(conf.tmp_file_name.c_str());
+            remove(conf.out_file_name.c_str());
+        } else {
+            rename(conf.tmp_file_name.c_str(), conf.out_file_name.c_str());
+        }
+    }
+
+    return num_errors;
 }

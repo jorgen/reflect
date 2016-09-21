@@ -1,7 +1,7 @@
 #include "test_struct.h"
 #include <stdio.h>
 
-const char *json = "{ \"test1\" : \"stringVal\" }";
+const char json[] = "{ \"test1\" : \"stringVal\" }";
 
 int main()
 {
